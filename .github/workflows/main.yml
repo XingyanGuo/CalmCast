@@ -13,29 +13,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ✅ Java 17（必须）
+      # Java 17
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Fix JVM args
-        run: sed -i 's/-XX:MaxPermSize=[^ ]*//g' gradle.properties || true
+      # 修复旧参数
+      - run: sed -i 's/-XX:MaxPermSize=[^ ]*//g' gradle.properties || true
 
-      # ✅ Android SDK（新版）
+      # Android SDK
       - uses: android-actions/setup-android@v3
 
-      - name: Install SDK packages
-        run: sdkmanager "platforms;android-33" "build-tools;33.0.2"
+      - run: sdkmanager "platforms;android-33" "build-tools;33.0.2"
 
-      # ✅ 正确做法：不要自己生成 wrapper！
-      # 如果 repo 有 gradlew → 用它
-      # 如果没有 → 我们手动加一个
-
-      - name: Create Gradle Wrapper (modern)
+      # ✅ 关键：直接创建 gradlew（不用 gradle wrapper）
+      - name: Create gradlew
         run: |
-          gradle wrapper --gradle-version 8.2
+          curl -L https://raw.githubusercontent.com/gradle/gradle/v7.6/gradlew -o gradlew
+          chmod +x gradlew
 
+      - name: Create gradlew.bat
+        run: |
+          curl -L https://raw.githubusercontent.com/gradle/gradle/v7.6/gradlew.bat -o gradlew.bat
+
+      # Build
       - name: Build APK
         run: ./gradlew assembleDebug --no-daemon
 
