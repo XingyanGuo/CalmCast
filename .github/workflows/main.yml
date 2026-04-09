@@ -13,12 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ✅ Step 1: 用 Java 17 安装 Android SDK
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      # --- Java 17 for SDK ---
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
 
       - name: Install Android SDK
         run: |
@@ -31,33 +30,32 @@ jobs:
       - name: Setup PATH
         run: |
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
 
       - name: Install SDK packages
         run: |
           yes | sdkmanager --licenses
           sdkmanager "platforms;android-28" "build-tools;28.0.3"
 
-      # ✅ Step 2: 切换回 Java 8（给 Gradle 用）
-      - name: Switch to JDK 8
-        uses: actions/setup-java@v4
+      # --- Switch to Java 8 for build ---
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '8'
+          distribution: temurin
+          java-version: 8
 
-      # 修复旧参数
       - name: Fix JVM args
         run: sed -i 's/-XX:MaxPermSize=[^ ]*//g' gradle.properties || true
 
-      # ✅ 旧 Gradle
-      - name: Generate wrapper
-        run: gradle wrapper --gradle-version 4.10.3
+      # ✅ Download old Gradle manually (关键)
+      - name: Download Gradle 4.10.3
+        run: |
+          curl -L https://services.gradle.org/distributions/gradle-4.10.3-bin.zip -o gradle.zip
+          unzip gradle.zip
 
-      # Build
+      # ✅ Build
       - name: Build APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradle-4.10.3/bin/gradle assembleDebug --no-daemon
 
-      # 上传
+      # Upload
       - uses: actions/upload-artifact@v4
         with:
           name: apk
