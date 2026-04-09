@@ -1,7 +1,6 @@
 name: Build APK
 
 on:
-  push:
   workflow_dispatch:
 
 jobs:
@@ -9,8 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -18,8 +16,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build Debug APK
-       run: gradle assembleDebug
+      - name: Install Gradle
+        run: sudo apt-get update && sudo apt-get install -y gradle
+
+      - name: Generate Gradle Wrapper
+        run: gradle wrapper
+
+      - name: Build APK
+        run: ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
