@@ -7,33 +7,43 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
       - uses: actions/checkout@v4
 
-      # Fix old JVM option
-      - name: Fix JVM args
-        run: sed -i 's/-XX:MaxPermSize=[^ ]*//g' gradle.properties || true
-
-      # ✅ Use Java 17 (required now)
+      # ✅ FORCE Java 17 globally
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # ✅ Android SDK (now works)
+      - name: Verify Java version
+        run: java -version
+
+      # ✅ Fix old Gradle config
+      - name: Fix JVM args
+        run: sed -i 's/-XX:MaxPermSize=[^ ]*//g' gradle.properties || true
+
+      # ✅ Android SDK (now will use Java 17)
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # Create wrapper (since repo is missing it)
+      # ✅ Install required SDK parts
+      - name: Install SDK components
+        run: sdkmanager "platforms;android-33" "build-tools;33.0.2"
+
+      # ✅ Create wrapper
       - name: Create Gradle Wrapper
         run: gradle wrapper --gradle-version 7.5
 
-      # Build
+      # ✅ Build
       - name: Build APK
         run: ./gradlew assembleDebug --no-daemon
 
-      # Upload
+      # ✅ Upload
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
