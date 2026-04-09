@@ -13,49 +13,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # --- Java 17 for SDK ---
+      # ✅ Java 17（必须）
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Install Android SDK
-        run: |
-          mkdir -p $ANDROID_HOME/cmdline-tools
-          cd $ANDROID_HOME/cmdline-tools
-          curl -o tools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          unzip tools.zip
-          mv cmdline-tools latest
-
-      - name: Setup PATH
-        run: |
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-
-      - name: Install SDK packages
-        run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-28" "build-tools;28.0.3"
-
-      # --- Switch to Java 8 for build ---
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 8
-
       - name: Fix JVM args
         run: sed -i 's/-XX:MaxPermSize=[^ ]*//g' gradle.properties || true
 
-      # ✅ Download old Gradle manually (关键)
-      - name: Download Gradle 4.10.3
+      # ✅ Android SDK（新版）
+      - uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: sdkmanager "platforms;android-33" "build-tools;33.0.2"
+
+      # ✅ 正确做法：不要自己生成 wrapper！
+      # 如果 repo 有 gradlew → 用它
+      # 如果没有 → 我们手动加一个
+
+      - name: Create Gradle Wrapper (modern)
         run: |
-          curl -L https://services.gradle.org/distributions/gradle-4.10.3-bin.zip -o gradle.zip
-          unzip gradle.zip
+          gradle wrapper --gradle-version 8.2
 
-      # ✅ Build
       - name: Build APK
-        run: ./gradle-4.10.3/bin/gradle assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon
 
-      # Upload
       - uses: actions/upload-artifact@v4
         with:
           name: apk
