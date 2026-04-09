@@ -11,37 +11,42 @@ jobs:
       ANDROID_HOME: /usr/local/lib/android/sdk
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # Java 17
-      - uses: actions/setup-java@v4
+      # ✅ Java 17（现代 Android + SDK 必须）
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 修复旧参数
-      - run: sed -i 's/-XX:MaxPermSize=[^ ]*//g' gradle.properties || true
+      # ✅ 修复旧 JVM 参数（避免崩）
+      - name: Fix JVM args
+        run: sed -i 's/-XX:MaxPermSize=[^ ]*//g' gradle.properties || true
 
-      # Android SDK
-      - uses: android-actions/setup-android@v3
+      # ✅ 安装 Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - run: sdkmanager "platforms;android-33" "build-tools;33.0.2"
-
-      # ✅ 关键：直接创建 gradlew（不用 gradle wrapper）
-      - name: Create gradlew
+      # ✅ 安装必要 SDK 组件（可根据报错调整）
+      - name: Install SDK packages
         run: |
-          curl -L https://raw.githubusercontent.com/gradle/gradle/v7.6/gradlew -o gradlew
-          chmod +x gradlew
+          sdkmanager "platforms;android-33" "build-tools;33.0.2"
 
-      - name: Create gradlew.bat
+      # ✅ 下载稳定 Gradle 7.6（关键！）
+      - name: Download Gradle 7.6
         run: |
-          curl -L https://raw.githubusercontent.com/gradle/gradle/v7.6/gradlew.bat -o gradlew.bat
+          curl -L https://services.gradle.org/distributions/gradle-7.6-bin.zip -o gradle.zip
+          unzip -q gradle.zip
 
-      # Build
+      # ✅ Build APK
       - name: Build APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradle-7.6/bin/gradle assembleDebug --no-daemon
 
-      - uses: actions/upload-artifact@v4
+      # ✅ 上传 APK
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: apk
           path: app/build/outputs/apk/debug/*.apk
